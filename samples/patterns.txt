@@ -1,0 +1,6 @@
+a(b|c)*        abcb
+a*             aaa
+(ab|a)*b       aab
+a|b            b
+a+b            aab
+a?b            ab

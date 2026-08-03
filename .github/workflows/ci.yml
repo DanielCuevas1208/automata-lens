@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Racket
+        uses: racket/setup-racket@main
+        with:
+          version: 'stable'
+
+      - name: Install dependencies
+        run: raco pkg install --auto --skip-installed rackunit-lib
+
+      - name: Install package
+        run: raco pkg install --auto --skip-installed $PWD
+
+      - name: Run tests
+        run: raco test tests/run-all.rkt
+
+      - name: Describe smoke test
+        run: racket main.rkt -d "a(b|c)*" abcb
+
+      - name: PNG export smoke test
+        run: |
+          racket main.rkt -e "a(b|c)*" /tmp/automaton.png
+          test -s /tmp/automaton.png
+
+      - name: Minimized export smoke test
+        run: |
+          racket main.rkt -m "a(b|c)*" /tmp/automaton-min.png
+          test -s /tmp/automaton-min.png

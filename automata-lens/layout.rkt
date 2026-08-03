@@ -1,0 +1,50 @@
+﻿#lang racket
+(require "graph.rkt")
+
+(provide layout-graph)
+
+(define x-gap 110)
+(define y-gap 80)
+(define pad 48)
+
+(define (neighbors edges s)
+  (sort (for/list ([e (in-list edges)] #:when (= (car e) s))
+          (caddr e))
+        <))
+
+(define (layout-graph g)
+  (define edges (automaton-graph-edges g))
+  (define start (automaton-graph-start g))
+  (define level-of (make-hash))
+  (hash-set! level-of start 0)
+  (let loop ((pending (list start)))
+    (unless (null? pending)
+      (define frontier '())
+      (for ([s (in-list pending)])
+        (define lvl (hash-ref level-of s))
+        (for ([n (in-list (neighbors edges s))])
+          (when (not (hash-has-key? level-of n))
+            (hash-set! level-of n (add1 lvl))
+            (set! frontier (cons n frontier)))))
+      (loop (reverse frontier))))
+  (define levels (sort (remove-duplicates (hash-values level-of)) <))
+  (define max-level (if (null? levels) 0 (apply max levels)))
+  (define width (+ (* 2 pad) (* (add1 max-level) x-gap)))
+  (define per-level
+    (for/hash ([lvl (in-list levels)])
+      (values lvl
+              (sort (filter (lambda (s) (= (hash-ref level-of s) lvl))
+                            (automaton-graph-states g))
+                    <))))
+  (define max-count
+    (apply max 1 (for/list ([(lvl sts) (in-hash per-level)]) (length sts))))
+  (define height (max (+ (* 2 pad) (* (sub1 max-count) y-gap)) 150))
+  (define positions (make-hash))
+  (for ([(lvl sts) (in-hash per-level)])
+    (define n (length sts))
+    (for ([s (in-list sts)] [i (in-naturals)])
+      (hash-set! positions s
+                 (cons (+ pad (* lvl x-gap))
+                       (+ (/ (- height 40) 2)
+                          (* (- i (/ (sub1 n) 2)) y-gap))))))
+  (values positions width height))

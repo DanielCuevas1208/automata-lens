@@ -18,12 +18,24 @@
   (void nfa) (void min-dfa)
   (define g (dfa->graph dfa))
   (define bmp (render-graph->bitmap g
-                                     #:highlight-edge (list (dfa-start dfa) #\a 1)
+                                     #:highlight-edge (list (dfa-start dfa) '(#\a) 1)
                                      #:highlight-state 1))
+  (check-true (> (send bmp get-width) 0)))
+
+(test-case "rendering a character class dfa does not fail"
+  (define-values (nfa dfa min-dfa) (make-automata "[a-c][0-9]"))
+  (void nfa) (void min-dfa)
+  (define bmp (render-graph->bitmap (dfa->graph dfa)))
   (check-true (> (send bmp get-width) 0)))
 
 (test-case "rendering an nfa does not fail"
   (define-values (nfa dfa min-dfa) (make-automata "a(b|c)*"))
+  (void dfa) (void min-dfa)
+  (define bmp (render-graph->bitmap (nfa->graph nfa)))
+  (check-true (> (send bmp get-width) 0)))
+
+(test-case "rendering an nfa with a character class does not fail"
+  (define-values (nfa dfa min-dfa) (make-automata "[^a]b"))
   (void dfa) (void min-dfa)
   (define bmp (render-graph->bitmap (nfa->graph nfa)))
   (check-true (> (send bmp get-width) 0)))

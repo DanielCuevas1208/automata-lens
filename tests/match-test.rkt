@@ -45,3 +45,36 @@
   (check-true (run-result-matched (run-dfa dfa "")))
   (check-true (run-result-matched (run-dfa dfa "aaa")))
   (check-false (run-result-matched (run-dfa dfa "aab"))))
+
+(test-case "a character class matches each of its characters"
+  (define-values (nfa dfa min-dfa) (make-automata "[a-c]"))
+  (void nfa) (void min-dfa)
+  (check-true (run-result-matched (run-dfa dfa "a")))
+  (check-true (run-result-matched (run-dfa dfa "b")))
+  (check-false (run-result-matched (run-dfa dfa "d"))))
+
+(test-case "a negated class rejects its excluded character"
+  (define-values (nfa dfa min-dfa) (make-automata "[^a]b"))
+  (void nfa) (void min-dfa)
+  (check-true (run-result-matched (run-dfa dfa "cb")))
+  (check-false (run-result-matched (run-dfa dfa "ab"))))
+
+(test-case "the dot matches any ascii character"
+  (define-values (nfa dfa min-dfa) (make-automata "a.b"))
+  (void nfa) (void min-dfa)
+  (check-true (run-result-matched (run-dfa dfa "a1b")))
+  (check-false (run-result-matched (run-dfa dfa "ab"))))
+
+(test-case "anchors do not change a full-string match"
+  (define-values (nfa dfa min-dfa) (make-automata "^a$"))
+  (void nfa) (void min-dfa)
+  (check-true (run-result-matched (run-dfa dfa "a")))
+  (check-false (run-result-matched (run-dfa dfa "ab")))
+  (check-false (run-result-matched (run-dfa dfa ""))))
+
+(test-case "a negated class matches any other ascii character"
+  (define-values (nfa dfa min-dfa) (make-automata "[^a]"))
+  (void nfa) (void min-dfa)
+  (check-true (run-result-matched (run-dfa dfa "z")))
+  (check-true (run-result-matched (run-dfa dfa "0")))
+  (check-false (run-result-matched (run-dfa dfa "a"))))

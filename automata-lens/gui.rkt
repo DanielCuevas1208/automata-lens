@@ -42,7 +42,7 @@
                    (send dc draw-bitmap bmp 0 0)
                    (begin
                      (send dc set-font (make-object font% 13 'default))
-                     (send dc set-text-foreground 'gray)
+                     (send dc set-text-foreground "gray")
                      (send dc draw-text "No automaton yet." 14 14)))))
            [parent parent] [min-width 470] [min-height 430]))
     (hash-set! bmp-table canvas #f)
@@ -120,14 +120,15 @@
       [else
        (define steps (run-result-steps result))
        (define st (list-ref steps idx))
-       (define g (dfa->graph (hash-ref state 'dfa #f)))
+       (define dfa (hash-ref state 'dfa #f))
+       (define g (dfa->graph dfa))
        (define he
          (and (> idx 0)
               (let* ((prev (list-ref steps (sub1 idx)))
                      (s (trace-step-state prev))
                      (c (trace-step-char st))
-                     (t (trace-step-state st)))
-                (list s c t))))
+                     (atom (char-symbol dfa c)))
+                (and atom (list s atom (trace-step-state st))))))
        (show-in! left-canvas g
                  #:highlight-edge he
                  #:highlight-state (trace-step-state st))

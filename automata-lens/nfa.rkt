@@ -1,5 +1,5 @@
 ﻿#lang racket
-(require "regex.rkt")
+(require "regex.rkt" "charset.rkt")
 
 (provide (struct-out nfa)
          build-nfa
@@ -8,6 +8,15 @@
          move)
 
 (struct nfa (states start accept edges) #:transparent)
+
+(define (label-set rx)
+  (match rx
+    [(rx-char c) (set c)]
+    [(rx-class chars negated?)
+     (define s (list->set chars))
+     (if negated? (set-subtract ascii-set s) s)]
+    [(rx-dot) ascii-set]
+    [_ (error 'build-nfa "node has no character label")]))
 
 (define (build-nfa rx)
   (define counter (box 0))
@@ -23,8 +32,21 @@
       [(rx-char c)
        (define s (fresh!))
        (define a (fresh!))
-       (add-edge! s c a)
+       (add-edge! s (set c) a)
        (values s a)]
+      [(rx-class _ _)
+       (define s (fresh!))
+       (define a (fresh!))
+       (add-edge! s (label-set rx) a)
+       (values s a)]
+      [(rx-dot)
+       (define s (fresh!))
+       (define a (fresh!))
+       (add-edge! s ascii-set a)
+       (values s a)]
+      [(rx-anchor _)
+       (define s (fresh!))
+       (values s s)]
       [(rx-empty)
        (define s (fresh!))
        (values s s)]
@@ -75,10 +97,12 @@
   (scan! starts)
   (sort result <))
 
-(define (move states edges c)
+(define (move states edges atom)
+  (define rep (car atom))
   (for*/list ([s (in-list states)]
               [e (in-list (hash-ref edges s '()))]
-              #:when (eq? (car e) c))
+              #:when (and (not (eq? (car e) 'epsilon))
+                          (set-member? (car e) rep)))
     (cdr e)))
 
 (define (nfa-accepts? nfa str)
@@ -90,5 +114,5 @@
        (and (member (nfa-accept nfa) states) #t)]
       [(null? states) #f]
       [else
-       (define next (epsilon-closure edges (move states edges (car cs))))
+       (define next (epsilon-closure edges (move states edges (list (car cs)))))
        (loop next (cdr cs))])))

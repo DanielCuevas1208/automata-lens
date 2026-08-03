@@ -8,15 +8,17 @@
 
 (define (distinguishable? dfa s1 s2)
   (define n (length (dfa-states dfa)))
-  (define alphabet (dfa-alphabet dfa))
   (define (accepting-after state str)
     (let loop ((s state) (cs (string->list str)))
       (if (null? cs)
           (member s (dfa-accept dfa))
-          (loop (hash-ref (hash-ref (dfa-trans dfa) s) (car cs)) (cdr cs)))))
+          (let ((atom (char-symbol dfa (car cs))))
+            (if (not atom)
+                #f
+                (loop (hash-ref (hash-ref (dfa-trans dfa) s) atom) (cdr cs)))))))
   (for*/or ([len (in-range 0 (add1 n))]
             [str (in-list (filter (lambda (s) (= (string-length s) len))
-                                  (all-strings alphabet n)))])
+                                  (all-strings (dfa-test-alphabet dfa) n)))])
     (not (eq? (accepting-after s1 str) (accepting-after s2 str)))))
 
 (test-case "minimization reduces the dfa of a(b|c)*"
@@ -34,6 +36,10 @@
 
 (test-case "minimization keeps the language of every corpus entry"
   (for ([entry (in-list corpus)])
+    (check-language! (car entry) (cadr entry))))
+
+(test-case "minimization keeps the language of every character class entry"
+  (for ([entry (in-list class-corpus)])
     (check-language! (car entry) (cadr entry))))
 
 (test-case "minimized dfa states are pairwise distinguishable"
@@ -54,7 +60,7 @@
     (define again (minimize-dfa min-dfa))
     (check-equal? (length (dfa-states again)) (length (dfa-states min-dfa))
                   (format "'~a'" (car entry)))
-    (for ([str (in-list (all-strings (dfa-alphabet min-dfa) 4))])
+    (for ([str (in-list (all-strings (dfa-test-alphabet min-dfa) 4))])
       (check-eq? (run-result-matched (run-dfa again str))
                  (run-result-matched (run-dfa min-dfa str))
                  (format "'~a' on '~a'" (car entry) str)))))

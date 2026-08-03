@@ -7,7 +7,29 @@
 
 (struct automaton-graph (states start accept edges) #:transparent)
 
-(define (label-key l) (if (eq? l 'epsilon) 1 0))
+(define (label-key l) (if (eq? l 'epsilon) 0 1))
+
+(define (label-to-chars l)
+  (cond
+    [(eq? l 'epsilon) '()]
+    [(char? l) (list l)]
+    [(set? l) (sort (set->list l) char<?)]
+    [else l]))
+
+(define (label<? a b)
+  (define ka (label-key a))
+  (cond
+    [(< ka (label-key b)) #t]
+    [(> ka (label-key b)) #f]
+    [else
+     (let loop ((as (label-to-chars a)) (bs (label-to-chars b)))
+       (cond
+         [(and (null? as) (null? bs)) #f]
+         [(null? as) #t]
+         [(null? bs) #f]
+         [(< (char->integer (car as)) (char->integer (car bs))) #t]
+         [(> (char->integer (car as)) (char->integer (car bs))) #f]
+         [else (loop (cdr as) (cdr bs))]))]))
 
 (define (edge<? a b)
   (define fa (car a)) (define fb (car b))
@@ -16,11 +38,10 @@
   (cond
     [(< fa fb) #t]
     [(> fa fb) #f]
-    [(< (label-key la) (label-key lb)) #t]
-    [(> (label-key la) (label-key lb)) #f]
-    [(and (eq? la 'epsilon) (eq? lb 'epsilon)) (< ta tb)]
-    [(char=? la lb) (< ta tb)]
-    [else (char<? la lb)]))
+    [(label<? la lb) #t]
+    [(label<? lb la) #f]
+    [(< ta tb) #t]
+    [else #f]))
 
 (define (sorted-edges raw)
   (sort raw edge<?))

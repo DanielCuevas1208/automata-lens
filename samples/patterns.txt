@@ -4,3 +4,7 @@ a*             aaa
 a|b            b
 a+b            aab
 a?b            ab
+[a-c][0-9]     b2
+[^a]b          cb
+a.b            a1b
+^[a-z]+$       racket

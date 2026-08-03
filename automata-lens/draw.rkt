@@ -1,7 +1,8 @@
 ﻿#lang racket
 (require racket/draw
          "graph.rkt"
-         "layout.rkt")
+         "layout.rkt"
+         "charset.rkt")
 
 (provide render-graph->bitmap
          export-graph->png)
@@ -42,7 +43,7 @@
                 (equal? s hstate))))
 
 (define (edge-label-text label)
-  (if (eq? label 'epsilon) "Îµ" (format "~a" label)))
+  (render-label label))
 
 (define (draw-edge dc p1 p2 label highlighted?)
   (if (equal? p1 p2)

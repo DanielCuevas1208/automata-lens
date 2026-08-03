@@ -1,3 +1,8 @@
 compiled/
 *.zo
 .racket/
+*.rkt~
+*.bak
+.DS_Store
+Thumbs.db
+test-temp

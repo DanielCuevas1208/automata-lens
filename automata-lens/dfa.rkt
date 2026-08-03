@@ -1,23 +1,36 @@
 ﻿#lang racket
-(require "nfa.rkt")
+(require "nfa.rkt" "charset.rkt")
 
 (provide (struct-out dfa)
-         nfa->dfa)
+         nfa->dfa
+         char-symbol)
 
 (struct dfa (states start accept alphabet trans) #:transparent)
 
+(define (positive-atoms label-sets)
+  (define groups (make-hash))
+  (for ([c (in-list ascii-chars)])
+    (define sig (for/list ([S (in-list label-sets)]) (set-member? S c)))
+    (hash-update! groups sig (lambda (acc) (cons c acc)) '()))
+  (define atoms
+    (sort (map (lambda (chars) (sort chars char<?)) (hash-values groups))
+          (lambda (a b) (< (char->integer (car a)) (char->integer (car b))))))
+  (filter (lambda (atom)
+            (ormap (lambda (S) (set-member? S (car atom))) label-sets))
+          atoms))
+
 (define (nfa->dfa nfa)
   (define edges (nfa-edges nfa))
-  (define alphabet
-    (sort (remove-duplicates
-           (for*/list ([(s lst) (in-hash edges)]
-                       [e (in-list lst)]
-                       #:when (not (eq? (car e) 'epsilon)))
-             (car e)))
-          char<?))
+  (define label-sets
+    (remove-duplicates
+     (for*/list ([(s lst) (in-hash edges)]
+                 [e (in-list lst)]
+                 #:when (not (eq? (car e) 'epsilon)))
+       (car e))))
+  (define alphabet (positive-atoms label-sets))
   (define (canonical states) (sort (remove-duplicates states) <))
   (define (closure states) (epsilon-closure edges states))
-  (define (move-on states c) (move states edges c))
+  (define (move-on states atom) (move states edges atom))
 
   (define set->id (make-hash))
   (define id->set (make-hash))
@@ -46,9 +59,9 @@
           (define nfa-set (hash-ref id->set id))
           (define row (make-hash))
           (hash-set! trans id row)
-          (for ([c (in-list alphabet)])
-            (define target (id-of (closure (move-on nfa-set c))))
-            (hash-set! row c target)
+          (for ([atom (in-list alphabet)])
+            (define target (id-of (closure (move-on nfa-set atom))))
+            (hash-set! row atom target)
             (when (not (hash-has-key? trans target))
               (set! next-round (cons target next-round))))))
       (loop (reverse next-round))))
@@ -60,3 +73,8 @@
             id)
           <))
   (dfa states start-id accepts alphabet trans))
+
+(define (char-symbol dfa c)
+  (for/or ([atom (in-list (dfa-alphabet dfa))]
+           #:when (member c atom))
+    atom))

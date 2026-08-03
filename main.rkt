@@ -5,7 +5,8 @@
          "automata-lens/minimize.rkt"
          "automata-lens/match.rkt"
          "automata-lens/graph.rkt"
-         "automata-lens/draw.rkt")
+         "automata-lens/draw.rkt"
+         "automata-lens/charset.rkt")
 
 (define (run-describe regex-str input-str)
   (define rx (parse-regex regex-str))
@@ -15,6 +16,8 @@
   (define result (run-dfa dfa input-str))
   (printf "Expression: ~a\n" regex-str)
   (printf "Parsed:     ~a\n" (regex->string rx))
+  (printf "Symbols:    ~a\n"
+          (string-join (map render-label (dfa-alphabet dfa)) " "))
   (printf "NFA states: ~a\n" (length (nfa-states nfa)))
   (printf "DFA states: ~a\n" (length (dfa-states dfa)))
   (printf "Minimized:  ~a states\n" (length (dfa-states min-dfa)))

@@ -4,4 +4,5 @@
          "dfa-test.rkt"
          "minimize-test.rkt"
          "match-test.rkt"
+         "charset-test.rkt"
          "render-test.rkt")

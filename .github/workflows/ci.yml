@@ -17,9 +17,6 @@ jobs:
         with:
           version: 'stable'
 
-      - name: Install dependencies
-        run: raco pkg install --auto --skip-installed --scope installation rackunit-lib
-
       - name: Install package
         run: raco pkg install --auto --skip-installed $PWD
 
